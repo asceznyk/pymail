@@ -1,3 +1,5 @@
+#! /usr/bin/python3
+
 from __future__ import print_function
 
 from typing import List, Dict, Union, Any
@@ -31,18 +33,27 @@ def resolve_msg(req_id:int, response:Dict, exception:Any=None):
   msg['Snippet'] = f"{response['snippet']}"
   msgs_list.append(msg)
 
+def assign_path(fname:str) -> str:
+  fp = ''
+  if os.path.exists(fname): fp = fname
+  elif os.path.exists(f"~/.config/pymail/{fname}"): fp = f"~/.config/pymail/{fname}"
+  else: print(f"{fname} dosen't exist")
+  return fp
+
 def get_credentials() -> Credentials:
   creds = None
-  if os.path.exists('token.json'):
-    creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+  fp = assign_path('token.json')
+  if fp != '':
+    creds = Credentials.from_authorized_user_file(fp, SCOPES)
   if not creds or not creds.valid:
     if creds and creds.expired and creds.refresh_token:
       creds.refresh(Request())
     else:
-      flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+      flow = InstalledAppFlow.from_client_secrets_file(
+        assign_path('credentials.json'), SCOPES
+      )
       creds = flow.run_local_server(port=0)
-      with open('token.json', 'w') as token:
-        token.write(creds.to_json())
+      with open(fp, 'w') as token: token.write(creds.to_json())
   return creds
 
 def fetch_mails(gmail:str, query:str, limit:int):
@@ -58,12 +69,10 @@ def fetch_mails(gmail:str, query:str, limit:int):
         service.users().messages().get(userId='me', id=m['id']), callback=resolve_msg
       )
     bt.execute()
-  except HttpError as error:
-    print(f'An error occurred: {error}')
+  except HttpError as error: print(f'An error occurred: {error}')
 
 def main(query:str, limit:int):
   start = time.time()
-  with open('config.json', 'r') as f: user = json.load(f)
   fetch_mails('me', query, limit)
   formatted_json = json.dumps(msgs_list, indent=2, sort_keys=True, ensure_ascii=False)
   colorful_json = highlight(
