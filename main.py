@@ -24,10 +24,11 @@ msgs_list: List[Dict[str, str]] = []
 
 def resolve_msg(req_id:int, response:Dict, exception):
   msg: Dict = {}
-  msg['Snippet'] = f"{response['snippet']}"
   for header in response['payload']['headers']:
     for item in ['From', 'Subject', 'Date']:
       if header['name'] == item: msg[item] = header['value']
+  msg['Link'] = f"https://mail.google.com/mail/u/0/#inbox/{response['id']}"
+  msg['Snippet'] = f"{response['snippet']}"
   msgs_list.append(msg)
 
 def get_credentials() -> Credentials:
@@ -64,12 +65,12 @@ def main(query:str, limit:int):
   start = time.time()
   with open('config.json', 'r') as f: user = json.load(f)
   fetch_mails('me', query, limit)
-  formatted_json = json.dumps(msgs_list, indent=2, ensure_ascii=False)
+  formatted_json = json.dumps(msgs_list, indent=2, sort_keys=True, ensure_ascii=False)
   colorful_json = highlight(
     formatted_json, lexers.JsonLexer(), formatters.TerminalFormatter()
   )
   print(colorful_json)
-  print(f"Took {time.time() - start} s")
+  print(f"Retrieved {len(msgs_list)} messages in {time.time() - start:.4f} s")
 
 if __name__ == '__main__':
   ap = argparse.ArgumentParser()
@@ -80,3 +81,5 @@ if __name__ == '__main__':
   for k in args.__dict__:
     to_args[k] = args.__dict__[k]
   main(**to_args)
+
+
