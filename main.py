@@ -2,8 +2,13 @@ from __future__ import print_function
 
 from typing import List, Dict, Union
 
+import os
+import time
 import json
-import os.path
+import base64
+import argparse
+
+from pygments import highlight, lexers, formatters
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -17,19 +22,13 @@ SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 msgs_list: List[Dict[str, str]] = []
 
-def fetch_msg(req_id:int, response:Dict, exception):
+def resolve_msg(req_id:int, response:Dict, exception):
   msg: Dict = {}
+  msg['Snippet'] = f"{response['snippet']}"
   for header in response['payload']['headers']:
-    if header['name'] == 'From': msg['From'] = header['value']
-    if header['name'] == 'Subject': msg['Subject'] = header['value']
+    for item in ['From', 'Subject', 'Date']:
+      if header['name'] == item: msg[item] = header['value']
   msgs_list.append(msg)
-
-def render_messages(user:Dict):
-  print(f"Messages for {user['gmail']} - Limited to the first {user['limit']} mails\n")
-  for msg in msgs_list:
-    print(msg['From'])
-    print(msg['Subject'])
-    print('')
 
 def get_credentials() -> Credentials:
   creds = None
@@ -45,25 +44,39 @@ def get_credentials() -> Credentials:
         token.write(creds.to_json())
   return creds
 
-def fetch_mails(user:Dict, query:str=''):
+def fetch_mails(gmail:str, query:str, limit:int):
   creds = get_credentials()
   try:
     service = build('gmail', 'v1', credentials=creds)
     msgs = service.users().messages().list(
-      userId=user['gmail'], maxResults=user['limit'], q=query
+      userId=gmail, maxResults=limit, q=query
     ).execute().get('messages', [])
     bt = service.new_batch_http_request()
     for m in msgs:
       bt.add(
-        service.users().messages().get(userId='me', id=m['id']), callback=fetch_msg
+        service.users().messages().get(userId='me', id=m['id']), callback=resolve_msg
       )
     bt.execute()
   except HttpError as error:
     print(f'An error occurred: {error}')
 
-def main():
+def main(query:str, limit:int):
+  start = time.time()
   with open('config.json', 'r') as f: user = json.load(f)
-  fetch_mails(user)
-  render_messages(user)
+  fetch_mails('me', query, limit)
+  formatted_json = json.dumps(msgs_list, indent=2, ensure_ascii=False)
+  colorful_json = highlight(
+    formatted_json, lexers.JsonLexer(), formatters.TerminalFormatter()
+  )
+  print(colorful_json)
+  print(f"Took {time.time() - start} s")
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+  ap = argparse.ArgumentParser()
+  ap.add_argument("-q", "--query", default="", help="query to search mail")
+  ap.add_argument("-l", "--limit", default=20, help="limit for number of results")
+  to_args = {}
+  args = ap.parse_args()
+  for k in args.__dict__:
+    to_args[k] = args.__dict__[k]
+  main(**to_args)
