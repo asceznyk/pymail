@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any
 
 import os
 import time
@@ -22,7 +22,7 @@ SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 msgs_list: List[Dict[str, str]] = []
 
-def resolve_msg(req_id:int, response:Dict, exception):
+def resolve_msg(req_id:int, response:Dict, exception:Any=None):
   msg: Dict = {}
   for header in response['payload']['headers']:
     for item in ['From', 'Subject', 'Date']:
