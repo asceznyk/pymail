@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
 
 from __future__ import print_function
 
@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
-msgs_list: List[Dict[str, str]] = []
+msg_inbox: List[Dict[str, str]] = []
 
 def resolve_msg(req_id:int, response:Dict, exception:Any=None):
   msg: Dict = {}
@@ -31,13 +31,16 @@ def resolve_msg(req_id:int, response:Dict, exception:Any=None):
       if header['name'] == item: msg[item] = header['value']
   msg['Link'] = f"https://mail.google.com/mail/u/0/#inbox/{response['id']}"
   msg['Snippet'] = f"{response['snippet']}"
-  msgs_list.append(msg)
+  msg_inbox.append(msg)
 
 def assign_path(fname:str) -> str:
-  fp = ''
+  fp = ""
+  home_path = f"{os.path.expanduser('~')}/.config/pymail/"
   if os.path.exists(fname): fp = fname
-  elif os.path.exists(f"~/.config/pymail/{fname}"): fp = f"~/.config/pymail/{fname}"
-  else: print(f"{fname} dosen't exist")
+  elif os.path.exists(f"{home_path}{fname}") or fname == "token.json":
+    fp = f"{home_path}{fname}"
+  else:
+    raise FileNotFoundError(f"{fname} not found!")
   return fp
 
 def get_credentials() -> Credentials:
@@ -71,24 +74,21 @@ def fetch_mails(gmail:str, query:str, limit:int):
     bt.execute()
   except HttpError as error: print(f'An error occurred: {error}')
 
-def main(query:str, limit:int):
+def inbox(query:str, limit:int):
   start = time.time()
   fetch_mails('me', query, limit)
-  formatted_json = json.dumps(msgs_list, indent=2, sort_keys=True, ensure_ascii=False)
+  formatted_json = json.dumps(msg_inbox, indent=2, sort_keys=True, ensure_ascii=False)
   colorful_json = highlight(
     formatted_json, lexers.JsonLexer(), formatters.TerminalFormatter()
   )
   print(colorful_json)
-  print(f"Retrieved {len(msgs_list)} messages in {time.time() - start:.4f} s")
+  print(f"Retrieved the top {len(msg_inbox)} messages in {time.time() - start:.4f} s")
 
-if __name__ == '__main__':
+def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("-q", "--query", default="", help="query to search mail")
   ap.add_argument("-l", "--limit", default=20, help="limit for number of results")
-  to_args = {}
   args = ap.parse_args()
-  for k in args.__dict__:
-    to_args[k] = args.__dict__[k]
-  main(**to_args)
+  inbox(args.query, args.limit)
 
 
