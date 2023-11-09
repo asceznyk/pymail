@@ -21,6 +21,7 @@ from googleapiclient.errors import HttpError
 from tqdm import tqdm
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+HOMEPATH = f"{os.path.expanduser('~')}/.config/pymail/"
 
 msg_inbox: List[Dict[str, str]] = []
 
@@ -33,30 +34,21 @@ def resolve_msg(req_id:int, response:Dict, exception:Any=None):
   msg['Snippet'] = f"{response['snippet']}"
   msg_inbox.append(msg)
 
-def assign_path(fname:str) -> str:
-  fp = ""
-  home_path = f"{os.path.expanduser('~')}/.config/pymail/"
-  if os.path.exists(fname): fp = fname
-  elif os.path.exists(f"{home_path}{fname}") or fname == "token.json":
-    fp = f"{home_path}{fname}"
-  else:
-    raise FileNotFoundError(f"{fname} not found!")
-  return fp
-
 def get_credentials() -> Credentials:
   creds = None
-  fp = assign_path('token.json')
-  if fp != '':
+  ftoken = f"{HOMEPATH}/token.json"
+  os.makedirs(HOMEPATH, exist_ok=True)
+  if os.path.exists(ftoken):
     creds = Credentials.from_authorized_user_file(fp, SCOPES)
   if not creds or not creds.valid:
     if creds and creds.expired and creds.refresh_token:
       creds.refresh(Request())
     else:
       flow = InstalledAppFlow.from_client_secrets_file(
-        assign_path('credentials.json'), SCOPES
+        f"{HOMEPATH}/credentials.json", SCOPES
       )
       creds = flow.run_local_server(port=0)
-      with open(fp, 'w') as token: token.write(creds.to_json())
+      with open(ftoken, 'w') as token: token.write(creds.to_json())
   return creds
 
 def fetch_mails(gmail:str, query:str, limit:int):
