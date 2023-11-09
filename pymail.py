@@ -38,7 +38,7 @@ def get_credentials() -> Credentials:
   creds = None
   ftoken = f"{HOMEPATH}/token.json"
   os.makedirs(HOMEPATH, exist_ok=True)
-  if os.path.exists(ftoken): ##extra
+  if os.path.exists(ftoken):
     creds = Credentials.from_authorized_user_file(ftoken, SCOPES)
   if not creds or not creds.valid:
     if creds and creds.expired and creds.refresh_token:
