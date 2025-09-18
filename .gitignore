@@ -1,4 +1,7 @@
 token.json
 credentials.json
-poetry.lock
 __pycache__/
+*.egg-info/
+logs/
+dummy.py
+

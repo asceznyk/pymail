@@ -1,29 +1,25 @@
-[tool.poetry]
-name = "pymail"
-version = "1.0.0"
-description = "A small CLI tool to query and list GMail inbox."
-readme = "README.md"
-authors = ["Aszels Sceznyk", "asceznyk@gmail.com"]
-homepage = "https://github.com/asceznyk/pymail"
-
-[tool.poetry.dependencies]
-python = "^3.7"
-google-api-core = "^2.12.0"
-google-api-python-client = "^2.106.0"
-google-auth = "^2.23.4"
-google-auth-httplib2 = "^0.1.1"
-google-auth-oauthlib = "^1.1.0"
-googleapis-common-protos= "^1.61.0"
-
-[tool.poetry.dev-dependencies]
-pytest = "^6.1.1"
-mypy = "^0.790"
-pylint = "^2.6.0"
-more-itertools = "^8.7.0"
-
-[tool.poetry.scripts]
-pymail = "pymail:main"
-
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["setuptools >= 67.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pymail"
+version = "1.1.0"
+description = "A small CLI tool to read/write mails."
+readme = "README.md"
+authors = [{"name" = "Aris Sceznyk", email = "asceznyk@gmail.com"}]
+requires-python = ">= 3.10"
+dependencies = [
+"google-api-python-client",
+"google-auth-httplib2",
+"google-auth-oauthlib",
+"rich",
+"typer"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+pymail = "pymail.main:cli"
+
