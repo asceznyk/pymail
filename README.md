@@ -12,6 +12,12 @@ rich
 typer
 ```
 
+## Main Issue
+
+You might run into an `ipv6` issue, where the system looks for ipv6 addresses before `ipv4`. This will cause a `timeout` error. The reason for this is certain ISP/Routers don't have good support for `ipv6`. 
+
+ In that case, you want to switch to your mobile network, or disable `ipv6` temporarily with this command `sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1`. But I don't encourage disabling ipv6.
+
 
 ## How to install
 1. Clone the repo with `git clone https://github.com/asceznyk/pymail.git`
@@ -26,4 +32,6 @@ typer
 - Fetch mails with `pymail fetch [STRING] [INTEGER]` - Fetches emails from your inbox. The first parameter is the query parameter, and the second parameter tells you how many mails to fetch.
 
 - Write a mail with `pymail write` - Let's you write mail and send a mail.
+
+
 
