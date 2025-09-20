@@ -1,5 +1,5 @@
 from functools import partial
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import os
 import time
 import json
@@ -12,9 +12,6 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-
-import logging
-from logging.handlers import RotatingFileHandler
 
 import typer
 import rich
@@ -30,6 +27,7 @@ SCOPES = [
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/gmail.readonly'
 ]
+
 HOMEPATH = f"{os.path.expanduser('~')}/.config/pymail"
 
 PYMAIL_CREDS = f"{HOMEPATH}/credentials.json"
@@ -65,7 +63,7 @@ def resolve_msg(
       for item in ['From', 'Subject', 'Date']:
         if header['name'] == item:
           msg[item.lower()] = header['value']
-    msg['link'] = f"https://mail.google.com/mail/u/0/#inbox/{response['id']}"
+    msg['link'] = f"https://mail.google.com/mail/me/#inbox/{response['id']}"
     msg['snippet'] = f"{response['snippet']}"
     msg_inbox.append(msg)
   except Exception:
@@ -98,7 +96,7 @@ def get_credentials() -> Credentials:
 
 def fetch_mails(
   query:str="", limit:int=5
-):
+) -> List[Optional[Dict[str,str]]]:
   creds = get_credentials()
   try:
     service = build("gmail", "v1", credentials=creds)
@@ -130,7 +128,7 @@ def fetch_mails(
 def send_mail(
   to_addr:str,
   subject:str="Automated Mail",
-  content:str="Hi,\n\n  This is an automated email\n\n Regards, PyMail",
+  content:str="Hi,\n\nThis is an automated email\n\nRegards, PyMail",
 ) -> Dict:
   creds = get_credentials()
   send_message = None
@@ -166,9 +164,6 @@ def fetch(query:str, limit:int):
   ) as progress:
     progress.add_task(description='fetching mails..', total=limit)
     res = fetch_mails(query=query, limit=limit)
-    custom_theme = {
-      "heading":"bold not dim underline",
-    }
     if not res:
       console.print("Coundn't fetch mails! Check the logs!")
       return
@@ -178,12 +173,11 @@ def fetch(query:str, limit:int):
         Markdown(
           f"""
 ## {msg['subject']}
-{msg['snippet']}\n
-[Open in browser]({msg['link']})\n
-        """
+\n{msg['snippet']}
+\n[Open in browser]({msg['link']})
+          """
         )
-      ),
-      justify="left"
+      )
     )
   console.print(f"Fetched requested mails in {time.time()-start:.3f}s")
 
@@ -196,10 +190,10 @@ def write():
     return
   to_addr = Prompt.ask("To (recipient address)")
   subject = Prompt.ask("Subject")
-  message = Prompt.ask("Message (body)")
+  content = Prompt.ask("Content (body)")
   console.print(f"To: {to_addr}, Subject: {subject}")
-  console.print(f"Message: {message}")
-  confirmation = send_mail(to_addr, subject, content=message)
+  console.print(f"Content: {content}")
+  confirmation = send_mail(to_addr, subject, content=content)
   console.print(json.dumps(confirmation, indent=2))
 
 def cli(): app()
