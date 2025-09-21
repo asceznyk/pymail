@@ -16,7 +16,7 @@ typer
 
 You might run into an `ipv6` issue, where the system looks for ipv6 addresses before `ipv4`. This will cause a `timeout` error. The reason for this is certain ISP/Routers don't have good support for `ipv6`. 
 
- In that case, you want to switch to your mobile network, or disable `ipv6` temporarily with this command `sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1`. But I don't encourage disabling ipv6.
+ In that case, you want to switch to your mobile network, or edit the `/etc/gai.conf` file to give ipv4 priority by uncommenting this line `#precedence ::ffff:0:0/96  100`. Then run `sudo sytemctl restart NetworkMangager`. That will give ipv4 priority.
 
 
 ## How to install
